@@ -287,23 +287,24 @@ BOOL       gSwift;
             case NSVariableExpressionType: {
                 // TODO SHOULD Handle LHS keypaths.
                 
-                NSString *type = nil;
+                NSString *className = nil;
                 
                 NSAttributeDescription *attribute = [[self attributesByName] objectForKey:[lhs keyPath]];
                 if (attribute) {
-                    type = [attribute objectAttributeClassName];
+                    className = [attribute objectAttributeClassName];
                 } else {
-                    type = [self _resolveKeyPathType:[lhs keyPath]];
+                    className = [self _resolveKeyPathType:[lhs keyPath]];
                 }
+                
+                NSString *type = className;
                 if (!gSwift) {
                     type = [type stringByAppendingString:@"*"];
                 }
                 // make sure that no repeated variables are entered here.
                 if (![self bindingsArray:bindings_ containsVariableNamed:[rhs variable]]) {
-                    [bindings_ addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-                                      [rhs variable], @"name",
-                                      type, @"type",
-                                      nil]];
+                    [bindings_ addObject:@{@"name": [rhs variable],
+                                           @"type": type,
+                                           @"class": className}];
                 }
             } break;
             default:
