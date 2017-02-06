@@ -90,6 +90,44 @@ static const NSString *const kAdditionalHeaderFileNameKey = @"additionalHeaderFi
 }
 @end
 
+@interface NSPropertyDescription (userInfoAdditions)
+- (BOOL)hasUserInfoKeys;
+- (NSDictionary *)userInfoByKeys;
+@end
+
+@implementation NSPropertyDescription (userInfoAdditions)
+- (NSDictionary*)sanitizedUserInfo {
+    NSMutableCharacterSet *validCharacters = [[[NSCharacterSet letterCharacterSet] mutableCopy] autorelease];
+    [validCharacters formUnionWithCharacterSet:[NSCharacterSet decimalDigitCharacterSet]];
+    [validCharacters addCharactersInString:@"_"];
+    NSCharacterSet *invalidCharacters = [validCharacters invertedSet];
+    
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:[[self userInfo] count]];
+    for (NSString *key in self.userInfo) {
+        if ([key rangeOfCharacterFromSet:invalidCharacters].location == NSNotFound) {
+            NSString *value = [self.userInfo objectForKey:key];
+            value = [value stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+            [result setObject:value forKey:key];
+        }
+    }
+    
+    return result;
+}
+
+- (BOOL)hasUserInfoKeys {
+    return ([self.sanitizedUserInfo count] > 0);
+}
+
+- (NSDictionary *)userInfoByKeys {
+    NSMutableDictionary *userInfoByKeys = [NSMutableDictionary dictionary];
+    
+    for (NSString *key in self.sanitizedUserInfo)
+        [userInfoByKeys setObject:[NSDictionary dictionaryWithObjectsAndKeys:key, @"key", [self.sanitizedUserInfo objectForKey:key], @"value", nil] forKey:key];
+    
+    return userInfoByKeys;
+}
+@end
+
 @implementation NSManagedObjectModel (entitiesWithACustomSubclassVerbose)
 - (NSArray*)entitiesWithACustomSubclassInConfiguration:(NSString*)configuration_ verbose:(BOOL)verbose_ {
     NSMutableArray *result = [NSMutableArray array];
